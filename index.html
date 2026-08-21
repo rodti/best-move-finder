@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Best Move Finder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0F3D3E;
+    --bg-deep: #0A2C2D;
+    --card: #FFF8E7;
+    --card-edge: #F3E7C9;
+    --ink: #16281F;
+    --ink-soft: #4B5D52;
+    --coral: #FF6B4A;
+    --coral-deep: #E8532F;
+    --gold: #FFD23F;
+    --teal-line: #1E5A5B;
+    --stab: #2FA36B;
+    --radius: 18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: radial-gradient(1200px 800px at 15% -10%, #164C4D 0%, var(--bg) 45%, var(--bg-deep) 100%);
+    font-family:'Nunito', sans-serif;
+    color: var(--ink);
+    min-height:100vh;
+    -webkit-tap-highlight-color: transparent;
+    padding-bottom: 40px;
+  }
+  h1,h2,h3,.display{font-family:'Fredoka', sans-serif; font-weight:600;}
+  .wrap{max-width:760px;margin:0 auto;padding:18px 16px 60px;}
+
+  .topbar{display:flex;align-items:center;gap:12px;padding:6px 4px 18px;}
+  .topbar .badge{
+    width:44px;height:44px;border-radius:50%;
+    background: conic-gradient(from 180deg, var(--coral) 0 50%, #fff 50% 100%);
+    border:3px solid var(--ink);
+    position:relative;flex:0 0 auto;
+  }
+  .topbar .badge::after{
+    content:"";position:absolute;top:50%;left:50%;width:14px;height:14px;
+    background:#fff;border:3px solid var(--ink);border-radius:50%;
+    transform:translate(-50%,-50%);
+  }
+  .topbar h1{color:#fff;font-size:26px;margin:0;letter-spacing:.2px;}
+  .topbar p{color:#BFE3D6;margin:2px 0 0;font-size:13px;font-weight:700;}
+
+  .panel{
+    background:var(--card);
+    border:2px solid var(--card-edge);
+    border-radius:var(--radius);
+    padding:20px;
+    margin-bottom:16px;
+    box-shadow:0 10px 24px rgba(0,0,0,.18);
+  }
+  .field-label{
+    font-family:'Fredoka';font-weight:600;font-size:14.5px;color:var(--ink);
+    display:flex;align-items:center;gap:6px;margin-bottom:7px;
+  }
+
+  .select-wrap{position:relative;margin-bottom:18px;}
+  select#gameSelect{
+    width:100%;padding:14px 40px 14px 14px;border-radius:14px;border:2px solid var(--card-edge);
+    font-family:'Nunito';font-size:16px;font-weight:800;background:#fff;color:var(--ink);
+    appearance:none;-webkit-appearance:none;cursor:pointer;
+  }
+  select#gameSelect:focus{outline:none;border-color:var(--coral);}
+  .select-wrap::after{
+    content:"▾";position:absolute;right:16px;top:50%;transform:translateY(-50%);
+    font-size:16px;color:var(--ink-soft);pointer-events:none;
+  }
+
+  .picker-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:8px;}
+  .picker{flex:1 1 240px;min-width:0;}
+
+  .combo{position:relative;}
+  .combo input{
+    width:100%;padding:12px 14px;border-radius:14px;border:2px solid var(--card-edge);
+    font-family:'Nunito';font-size:15px;font-weight:700;background:#fff;color:var(--ink);
+  }
+  .combo input:focus{outline:none;border-color:var(--coral);}
+  .dropdown-list{
+    margin-top:6px;background:#fff;border:2px solid var(--card-edge);border-radius:14px;
+    max-height:230px;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  }
+  .dropdown-list.hidden{display:none;}
+  .dd-row{
+    display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;
+    border-bottom:1px solid #F3EFE0;
+  }
+  .dd-row:last-child{border-bottom:none;}
+  .dd-row:active{background:#FFF0EA;}
+  .dd-row img{width:32px;height:32px;object-fit:contain;flex:0 0 auto;}
+  .dd-row .dd-name{font-weight:800;font-size:14px;}
+  .dd-row .dd-id{font-size:11px;color:var(--ink-soft);font-weight:700;margin-left:auto;}
+  .dd-empty{padding:14px;text-align:center;color:var(--ink-soft);font-weight:700;font-size:13px;}
+
+  .selected-preview{
+    display:flex;align-items:center;gap:10px;background:#fff;border:2px solid var(--coral);
+    border-radius:14px;padding:9px 12px;
+  }
+  .selected-preview.hidden{display:none;}
+  .selected-preview img{width:42px;height:42px;object-fit:contain;flex:0 0 auto;}
+  .selected-preview .sp-info{flex:1;min-width:0;}
+  .selected-preview .sp-info b{display:block;font-size:14.5px;text-transform:capitalize;}
+  .type-badges{display:flex;gap:4px;margin-top:3px;flex-wrap:wrap;}
+  .selected-preview .change-btn{
+    border:none;background:#F3EFE0;color:var(--ink-soft);font-weight:800;font-size:12px;
+    border-radius:999px;padding:6px 11px;cursor:pointer;flex:0 0 auto;
+  }
+
+  .type-badge{
+    display:inline-flex;align-items:center;gap:4px;padding:3px 9px 3px 7px;border-radius:999px;
+    font-size:11px;font-weight:800;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.25);
+    white-space:nowrap;
+  }
+
+  .go-btn{
+    width:100%;padding:16px;border:none;border-radius:14px;background:var(--coral);
+    color:#fff;font-family:'Fredoka';font-size:18px;font-weight:600;cursor:pointer;
+    box-shadow:0 6px 0 var(--coral-deep);margin-top:14px;
+  }
+  .go-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--coral-deep);}
+  .go-btn:disabled{background:#C9C2AE;box-shadow:0 6px 0 #A9A18B;cursor:not-allowed;}
+
+  .arena{
+    background:linear-gradient(180deg, #F3FFF6, var(--card));
+    border:2px solid var(--card-edge);border-radius:var(--radius);
+    padding:18px;margin-bottom:16px;box-shadow:0 10px 24px rgba(0,0,0,.18);
+  }
+  .vs-row{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:16px;}
+  .vs-mon{text-align:center;flex:1;}
+  .vs-mon img{width:88px;height:88px;object-fit:contain;}
+  .vs-mon .nm{font-weight:800;font-size:14px;display:block;text-transform:capitalize;}
+  .vs-badge{
+    font-family:'Fredoka';font-weight:700;color:var(--coral-deep);font-size:20px;
+    background:#fff;border:3px solid var(--coral-deep);border-radius:50%;
+    width:46px;height:46px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+  }
+
+  .move-card{
+    background:#fff;border:2px solid var(--card-edge);border-radius:14px;
+    padding:12px 14px;margin-bottom:10px;
+  }
+  .move-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .move-name{font-weight:800;font-size:15.5px;text-transform:capitalize;}
+  .move-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center;}
+  .pill{font-size:11px;font-weight:800;padding:3px 8px;border-radius:999px;background:#EFEAD6;color:var(--ink-soft);}
+  .pill.stab{background:#DEF7E9;color:var(--stab);}
+  .eff-bar-track{height:8px;border-radius:5px;background:#EFEAD6;margin-top:9px;overflow:hidden;}
+  .eff-bar-fill{height:100%;border-radius:5px;}
+  .eff-label{font-family:'Fredoka';font-weight:600;font-size:13px;margin-top:6px;}
+
+  .empty-note{
+    background:#fff;border:2px dashed var(--card-edge);border-radius:14px;padding:16px;
+    text-align:center;color:var(--ink-soft);font-weight:700;font-size:13.5px;
+  }
+  .loading{
+    display:flex;flex-direction:column;align-items:center;gap:10px;padding:30px 10px;color:var(--ink-soft);font-weight:800;
+  }
+  .spinner{
+    width:34px;height:34px;border-radius:50%;border:5px solid #EFEAD6;border-top-color:var(--coral);
+    animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .footer-note{color:#BFE3D6;text-align:center;font-size:11.5px;font-weight:700;margin-top:18px;opacity:.8;}
+
+  ::-webkit-scrollbar{width:6px;}
+  ::-webkit-scrollbar-thumb{background:var(--card-edge);border-radius:4px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="badge"></div>
+    <div>
+      <h1>Best Move Finder</h1>
+      <p>Pick your game and your two Pokémon — find the strongest attack.</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="field-label">🎮 Which game are you playing?</div>
+    <div class="select-wrap">
+      <select id="gameSelect"><option value="">Loading games…</option></select>
+    </div>
+
+    <div class="picker-row">
+      <div class="picker">
+        <div class="field-label">🕹️ Your Pokémon</div>
+        <div id="pickerMine"></div>
+      </div>
+      <div class="picker">
+        <div class="field-label">⚔️ Opponent's Pokémon</div>
+        <div id="pickerFoe"></div>
+      </div>
+    </div>
+
+    <button class="go-btn" id="findBtn" disabled onclick="runBattle()">Find the Best Move ⚡</button>
+  </div>
+
+  <div id="results"></div>
+
+  <div class="footer-note">Data from PokéAPI, refreshed live · works best with Wi‑Fi</div>
+</div>
+
+<script>
+const API = "https://pokeapi.co/api/v2";
+const SPRITE = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+const ARTWORK = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+
+const TYPE_INFO = {
+  normal:  {color:"#A0A29F", emoji:"⚪"},
+  fire:    {color:"#FF9C54", emoji:"🔥"},
+  water:   {color:"#4D90D5", emoji:"💧"},
+  electric:{color:"#F4D23C", emoji:"⚡"},
+  grass:   {color:"#63BC5A", emoji:"🌿"},
+  ice:     {color:"#74CEC0", emoji:"❄️"},
+  fighting:{color:"#CE416B", emoji:"🥊"},
+  poison:  {color:"#B567CE", emoji:"☠️"},
+  ground:  {color:"#D97845", emoji:"⛰️"},
+  flying:  {color:"#8FA8DD", emoji:"🕊️"},
+  psychic: {color:"#FA7179", emoji:"🔮"},
+  bug:     {color:"#90C12C", emoji:"🐛"},
+  rock:    {color:"#C7B78B", emoji:"🪨"},
+  ghost:   {color:"#5269AC", emoji:"👻"},
+  dragon:  {color:"#0A6DC4", emoji:"🐉"},
+  dark:    {color:"#5A5366", emoji:"🌙"},
+  steel:   {color:"#5A8EA1", emoji:"⚙️"},
+  fairy:   {color:"#EC8FE6", emoji:"✨"},
+};
+
+// ---------- tiny fetch cache (localStorage) ----------
+const CACHE_PREFIX = "bmf_v2_";
+async function cachedGet(url){
+  const key = CACHE_PREFIX + url;
+  try{
+    const hit = localStorage.getItem(key);
+    if(hit) return JSON.parse(hit);
+  }catch(e){}
+  const res = await fetch(url);
+  if(!res.ok) throw new Error("Network error loading data ("+res.status+")");
+  const data = await res.json();
+  try{ localStorage.setItem(key, JSON.stringify(data)); }catch(e){ /* storage full, ignore */ }
+  return data;
+}
+
+function titleCase(slug){
+  return slug.split("-").map(w => w.charAt(0).toUpperCase()+w.slice(1)).join(" ");
+}
+function idFromUrl(url){
+  const parts = url.split("/").filter(Boolean);
+  return parseInt(parts[parts.length-1], 10);
+}
+function typeBadge(typeName){
+  const info = TYPE_INFO[typeName] || {color:"#888", emoji:"❔"};
+  return `<span class="type-badge" style="background:${info.color}">${info.emoji} ${titleCase(typeName)}</span>`;
+}
+
+// ---------- app state ----------
+const state = {
+  games: [],
+  pokemonList: [],
+  selectedGame: null,
+  myMon: null,
+  foeMon: null,
+};
+
+const ERAS = [
+  {label:"Gen I — Red / Blue / Yellow", match:["red","blue","yellow"]},
+  {label:"Gen II — Gold / Silver / Crystal", match:["gold","silver","crystal"]},
+  {label:"Gen III — Ruby / Sapphire / Emerald / FireRed / LeafGreen", match:["ruby","sapphire","emerald","firered","leafgreen"]},
+  {label:"Gen IV — Diamond / Pearl / Platinum / HeartGold / SoulSilver", match:["diamond","pearl","platinum","heartgold","soulsilver"]},
+  {label:"Gen V — Black / White / Black 2 / White 2", match:["black","white","black-2","white-2"]},
+  {label:"Gen VI — X / Y / Omega Ruby / Alpha Sapphire", match:["x","y","omega-ruby","alpha-sapphire"]},
+  {label:"Gen VII — Sun / Moon / Ultra Sun / Ultra Moon / Let's Go", match:["sun","moon","ultra-sun","ultra-moon","lets-go"]},
+  {label:"Gen VIII — Sword / Shield / BD / SP / Legends Arceus", match:["sword","shield","brilliant-diamond","shining-pearl","legends-arceus"]},
+  {label:"Gen IX — Scarlet / Violet", match:["scarlet","violet"]},
+];
+
+// ---------- boot ----------
+async function boot(){
+  try{
+    const [versionData, pokemonData] = await Promise.all([
+      cachedGet(`${API}/version?limit=60`),
+      cachedGet(`${API}/pokemon?limit=2000`),
+    ]);
+
+    state.games = versionData.results.map(v => ({ name: v.name, label: titleCase(v.name), url: v.url }));
+    state.pokemonList = pokemonData.results.map(p => ({ name: p.name, id: idFromUrl(p.url) }))
+      .filter(p => !isNaN(p.id));
+
+    populateGameSelect();
+    setupCombo('pickerMine', 'mine');
+    setupCombo('pickerFoe', 'foe');
+  }catch(err){
+    document.getElementById('gameSelect').innerHTML = `<option>Couldn't load — check connection</option>`;
+    document.getElementById('results').innerHTML = `<div class="panel"><h2>⚠️ Couldn't load data</h2>
+      <p>${err.message}. Check your internet connection, then reload the page.</p>
+      <button class="go-btn" onclick="location.reload()">Retry</button></div>`;
+  }
+}
+
+function populateGameSelect(){
+  const sel = document.getElementById('gameSelect');
+  const groups = {};
+  for(const g of state.games){
+    let placed = false;
+    for(const era of ERAS){
+      if(era.match.some(m => g.name.includes(m))){
+        groups[era.label] = groups[era.label] || [];
+        groups[era.label].push(g);
+        placed = true; break;
+      }
+    }
+    if(!placed){ groups["Other"] = groups["Other"] || []; groups["Other"].push(g); }
+  }
+  let html = `<option value="">Choose a game…</option>`;
+  for(const era of ERAS){
+    if(!groups[era.label]) continue;
+    html += `<optgroup label="${era.label}">`;
+    html += groups[era.label].map(g => `<option value="${g.name}">${g.label}</option>`).join("");
+    html += `</optgroup>`;
+  }
+  if(groups["Other"]){
+    html += `<optgroup label="Other">` + groups["Other"].map(g => `<option value="${g.name}">${g.label}</option>`).join("") + `</optgroup>`;
+  }
+  sel.innerHTML = html;
+  sel.addEventListener('change', async () => {
+    const name = sel.value;
+    if(!name){ state.selectedGame = null; updateFindBtn(); return; }
+    const game = state.games.find(g => g.name === name);
+    try{
+      const versionDetail = await cachedGet(game.url);
+      const versionGroup = versionDetail.version_group;
+      state.selectedGame = { name: game.name, label: game.label, versionGroupName: versionGroup.name, versionGroupUrl: versionGroup.url };
+    }catch(e){
+      alert("Couldn't load that game's details, please try another.");
+      state.selectedGame = null;
+    }
+    updateFindBtn();
+  });
+}
+
+// ---------- simple combo picker ----------
+function setupCombo(containerId, which){
+  const container = document.getElementById(containerId);
+  container.innerHTML = `
+    <div class="combo">
+      <input type="text" placeholder="Search by name or #…" id="${which}Input" autocomplete="off">
+      <div class="dropdown-list hidden" id="${which}Dropdown"></div>
+    </div>
+    <div class="selected-preview hidden" id="${which}Preview"></div>
+  `;
+  const input = document.getElementById(`${which}Input`);
+  const dropdown = document.getElementById(`${which}Dropdown`);
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    if(!q){ dropdown.classList.add('hidden'); dropdown.innerHTML=""; return; }
+    const normQ = q.replace(/[\s'.]/g, "");
+    const numQ = q.replace("#", "");
+    const matches = state.pokemonList.filter(p =>
+      p.name.includes(q) || p.name.replace(/-/g,"").includes(normQ) || String(p.id) === numQ
+    ).slice(0, 8);
+    dropdown.innerHTML = matches.length
+      ? matches.map(p => `
+          <div class="dd-row" onclick="chooseMon('${which}','${p.name}',${p.id})">
+            <img src="${SPRITE(p.id)}" loading="lazy" onerror="this.style.visibility='hidden'">
+            <span class="dd-name">${titleCase(p.name)}</span>
+            <span class="dd-id">#${p.id}</span>
+          </div>`).join("")
+      : `<div class="dd-empty">No Pokémon match that search.</div>`;
+    dropdown.classList.remove('hidden');
+  });
+  input.addEventListener('focus', () => { if(input.value.trim()) dropdown.classList.remove('hidden'); });
+  document.addEventListener('click', (e) => {
+    if(!container.contains(e.target)) dropdown.classList.add('hidden');
+  });
+}
+
+async function chooseMon(which, name, id){
+  const mon = { name, id };
+  if(which === 'mine') state.myMon = mon; else state.foeMon = mon;
+
+  document.getElementById(`${which}Dropdown`).classList.add('hidden');
+  document.getElementById(`${which}Input`).value = "";
+
+  const preview = document.getElementById(`${which}Preview`);
+  preview.classList.remove('hidden');
+  preview.innerHTML = `
+    <img src="${SPRITE(id)}" onerror="this.style.visibility='hidden'">
+    <div class="sp-info">
+      <b>${titleCase(name)}</b>
+      <div class="type-badges" id="${which}TypeBadges"><span class="pill">Loading type…</span></div>
+    </div>
+    <button class="change-btn" onclick="clearMon('${which}')">Change</button>
+  `;
+  updateFindBtn();
+
+  try{
+    const data = await cachedGet(`${API}/pokemon/${name}`);
+    const badgesEl = document.getElementById(`${which}TypeBadges`);
+    if(badgesEl) badgesEl.innerHTML = data.types.map(t => typeBadge(t.type.name)).join("");
+  }catch(e){ /* non-fatal, badge just won't show */ }
+}
+
+function clearMon(which){
+  if(which === 'mine') state.myMon = null; else state.foeMon = null;
+  document.getElementById(`${which}Preview`).classList.add('hidden');
+  document.getElementById(`${which}Preview`).innerHTML = "";
+  updateFindBtn();
+}
+
+function updateFindBtn(){
+  document.getElementById('findBtn').disabled = !(state.selectedGame && state.myMon && state.foeMon);
+}
+
+// ---------- Battle logic ----------
+async function runBattle(){
+  const results = document.getElementById('results');
+  results.innerHTML = `<div class="panel loading"><div class="spinner"></div>Checking movesets &amp; type matchups…</div>`;
+  results.scrollIntoView({behavior:'smooth', block:'start'});
+
+  try{
+    const [myData, foeData] = await Promise.all([
+      cachedGet(`${API}/pokemon/${state.myMon.name}`),
+      cachedGet(`${API}/pokemon/${state.foeMon.name}`),
+    ]);
+
+    const myTypes = myData.types.map(t => t.type.name);
+    const foeTypes = foeData.types.map(t => t.type.name);
+    const vg = state.selectedGame.versionGroupName;
+
+    const vgDetail = await cachedGet(state.selectedGame.versionGroupUrl);
+    const genId = idFromUrl(vgDetail.generation.url);
+
+    const learnable = myData.moves
+      .filter(m => m.version_group_details.some(d => d.version_group.name === vg))
+      .map(m => m.move.name);
+
+    let usingFallback = false;
+    let moveNames = learnable;
+    if(moveNames.length === 0){
+      usingFallback = true;
+      moveNames = myData.moves.map(m => m.move.name);
+    }
+
+    const capped = moveNames.slice(0, 120);
+    const moveDetails = await Promise.all(capped.map(n => cachedGet(`${API}/move/${n}`).catch(()=>null)));
+    const damaging = moveDetails.filter(m => m && m.power && m.damage_class && m.damage_class.name !== "status");
+
+    const typeCache = {};
+    async function getEffectiveness(attackType, defendType){
+      if(!typeCache[attackType]) typeCache[attackType] = await cachedGet(`${API}/type/${attackType}`);
+      const t = typeCache[attackType];
+      let relations = t.damage_relations;
+      if(t.past_damage_relations && t.past_damage_relations.length){
+        const applicable = t.past_damage_relations
+          .map(p => ({gen: idFromUrl(p.generation.url), relations: p.damage_relations}))
+          .filter(p => p.gen >= genId)
+          .sort((a,b) => a.gen - b.gen);
+        if(applicable.length) relations = applicable[0].relations;
+      }
+      if(relations.no_damage_to.some(x => x.name === defendType)) return 0;
+      if(relations.double_damage_to.some(x => x.name === defendType)) return 2;
+      if(relations.half_damage_to.some(x => x.name === defendType)) return 0.5;
+      return 1;
+    }
+
+    const scored = [];
+    for(const mv of damaging){
+      let mult = 1;
+      for(const ft of foeTypes){
+        mult *= await getEffectiveness(mv.type.name, ft);
+      }
+      const stab = myTypes.includes(mv.type.name);
+      scored.push({
+        name: mv.name, type: mv.type.name, power: mv.power, accuracy: mv.accuracy,
+        damageClass: mv.damage_class.name, mult, stab,
+        score: mult * mv.power * (stab ? 1.5 : 1),
+      });
+    }
+    scored.sort((a,b) => b.score - a.score);
+    const top = scored.slice(0, 6);
+
+    renderResults({myData, foeData, myTypes, foeTypes, top, usingFallback});
+  }catch(err){
+    results.innerHTML = `<div class="panel"><h2>⚠️ Something went wrong</h2><p>${err.message}</p></div>`;
+  }
+}
+
+function effLabel(mult){
+  if(mult === 0) return {text:"No effect", color:"#A0A29F"};
+  if(mult >= 4) return {text:"4× Super effective!", color:"#2FA36B"};
+  if(mult === 2) return {text:"2× Super effective!", color:"#2FA36B"};
+  if(mult === 1) return {text:"Normal damage", color:"#D9A441"};
+  if(mult === 0.5) return {text:"0.5× Not very effective", color:"#CE416B"};
+  if(mult === 0.25) return {text:"0.25× Barely effective", color:"#CE416B"};
+  return {text:mult+"× damage", color:"#D9A441"};
+}
+
+function renderResults({myData, foeData, myTypes, foeTypes, top, usingFallback}){
+  const myArt = ARTWORK(myData.id);
+  const foeArt = ARTWORK(foeData.id);
+  const results = document.getElementById('results');
+
+  results.innerHTML = `
+  <div class="arena">
+    <div class="vs-row">
+      <div class="vs-mon">
+        <img src="${myArt}" onerror="this.src='${SPRITE(myData.id)}'">
+        <span class="nm">${titleCase(myData.name)}</span>
+        <div class="type-badges" style="justify-content:center">${myTypes.map(typeBadge).join("")}</div>
+      </div>
+      <div class="vs-badge">VS</div>
+      <div class="vs-mon">
+        <img src="${foeArt}" onerror="this.src='${SPRITE(foeData.id)}'">
+        <span class="nm">${titleCase(foeData.name)}</span>
+        <div class="type-badges" style="justify-content:center">${foeTypes.map(typeBadge).join("")}</div>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <h2 style="margin:0 0 4px;font-size:20px;">🏆 Best attacks to use</h2>
+    <p style="margin:0 0 14px;color:var(--ink-soft);font-size:13.5px;font-weight:700;">${state.selectedGame.label} · ranked by effectiveness, power, and same‑type bonus</p>
+    ${usingFallback ? `<div class="empty-note" style="margin-bottom:12px;">${titleCase(myData.name)} doesn't learn any attacks in ${state.selectedGame.label} yet, so this list uses its moves from any game instead.</div>` : ""}
+    ${top.length ? top.map(m => moveCardHtml(m)).join("") : `<div class="empty-note">No damaging moves found for this Pokémon in this game.</div>`}
+  </div>
+  `;
+}
+
+function moveCardHtml(m){
+  const eff = effLabel(m.mult);
+  const barPct = Math.min(100, (m.mult / 4) * 100);
+  return `
+  <div class="move-card">
+    <div class="move-top">
+      <span class="move-name">${titleCase(m.name)}</span>
+      ${typeBadge(m.type)}
+    </div>
+    <div class="move-meta">
+      <span class="pill">${m.damageClass === 'physical' ? '👊 Physical' : '✨ Special'}</span>
+      <span class="pill">Power ${m.power}</span>
+      <span class="pill">${m.accuracy ? 'Accuracy '+m.accuracy+'%' : 'Never misses'}</span>
+      ${m.stab ? `<span class="pill stab">⭐ Same-type bonus</span>` : ""}
+    </div>
+    <div class="eff-bar-track"><div class="eff-bar-fill" style="width:${barPct}%;background:${eff.color}"></div></div>
+    <div class="eff-label" style="color:${eff.color}">${eff.text}</div>
+  </div>`;
+}
+
+boot();
+</script>
+</body>
+</html>
